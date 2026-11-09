@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fasilink-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: FasilinkDev2026
+      POSTGRES_DB: fasilink_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - fasilink_pgdata:/var/lib/postgresql/data
+
+volumes:
+  fasilink_pgdata:

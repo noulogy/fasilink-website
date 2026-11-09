@@ -1,0 +1,256 @@
+openapi: 3.0.3
+info:
+  title: Campus Facility & Schedule Manager (FasiLink) API
+  description: REST API Specification for FasiLink Web Application adhering to LSKK standard stack.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Production & Development v1 API Prefix
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        totalData:
+          type: integer
+          example: 45
+        totalDataPerPage:
+          type: integer
+          example: 10
+        totalPages:
+          type: integer
+          example: 5
+
+    StandardResponse:
+      type: object
+      required:
+        - code
+        - status
+        - message
+      properties:
+        code:
+          type: integer
+          example: 200
+        status:
+          type: string
+          enum: [success, error]
+          example: success
+        message:
+          type: string
+          example: Operasi berhasil
+        data:
+          type: object
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          example: admin123
+
+    RoomBookingRequestInput:
+      type: object
+      required:
+        - roomId
+        - bookingDate
+        - startTime
+        - endTime
+        - expectedAttendees
+        - purpose
+      properties:
+        roomId:
+          type: integer
+          example: 1
+        bookingDate:
+          type: string
+          format: date
+          example: '2026-11-15'
+        startTime:
+          type: string
+          example: '08:00'
+        endTime:
+          type: string
+          example: '10:30'
+        expectedAttendees:
+          type: integer
+          example: 35
+        purpose:
+          type: string
+          example: Seminar Himpunan Mahasiswa Informatika
+
+    InventoryLoanRequestInput:
+      type: object
+      required:
+        - itemId
+        - quantity
+        - loanDate
+        - expectedReturnDate
+        - purpose
+      properties:
+        itemId:
+          type: integer
+          example: 1
+        quantity:
+          type: integer
+          example: 2
+        loanDate:
+          type: string
+          format: date
+          example: '2026-11-15'
+        expectedReturnDate:
+          type: string
+          format: date
+          example: '2026-11-16'
+        purpose:
+          type: string
+          example: Presentasi Sidang Tugas Akhir
+
+    FindAlternativeInput:
+      type: object
+      required:
+        - scheduleId
+      properties:
+        scheduleId:
+          type: integer
+          example: 1
+        preferredDays:
+          type: array
+          items:
+            type: integer
+          example: [1, 2, 4]
+        preferredStartTime:
+          type: string
+          example: '08:00'
+        preferredEndTime:
+          type: string
+          example: '12:00'
+        preferredRoomId:
+          type: integer
+          example: 2
+        preferredBuilding:
+          type: string
+          example: 'Gedung Sains & Teknologi'
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      summary: User / Admin Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login sukses, mengembalikan access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Kredensial tidak valid
+
+  /dashboard/admin:
+    get:
+      summary: Ringkasan KPI Admin
+      responses:
+        '200':
+          description: Statistik dashboard admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /rooms:
+    get:
+      summary: Daftar Ruangan
+      parameters:
+        - name: building
+          in: query
+          schema:
+            type: string
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Daftar data ruangan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /schedules/find-alternatives:
+    post:
+      summary: Cari rekomendasi slot alternatif jadwal kuliah bebas bentrok
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindAlternativeInput'
+      responses:
+        '200':
+          description: Daftar kandidat alternatif terurut berdasarkan skor preferensi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /room-bookings:
+    post:
+      summary: Ajukan peminjaman ruangan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomBookingRequestInput'
+      responses:
+        '201':
+          description: Pengajuan berhasil disimpan dengan status PENDING
+        '409':
+          description: Ruangan bentrok dengan perkuliahan atau peminjaman lain
+
+  /inventory-loans:
+    post:
+      summary: Ajukan peminjaman barang inventaris
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryLoanRequestInput'
+      responses:
+        '201':
+          description: Pengajuan berhasil disimpan dengan status PENDING
+        '409':
+          description: Stok barang tidak mencukupi
+
